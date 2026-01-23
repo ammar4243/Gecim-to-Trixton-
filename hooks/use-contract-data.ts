@@ -204,9 +204,8 @@ export function useContractData() {
       // Try to fetch Total Team Business using teamVolume function
       try {
         const teamVol = await contract.teamVolume(address)
-        // Handle both number and BigNumber formats
-        const teamVolAmount = typeof teamVol === 'bigint' ? Number(teamVol) : Number(teamVol)
-        totalTeamBusiness = teamVolAmount
+        // Format with 6 decimals like USDT
+        totalTeamBusiness = Number(ethers.formatUnits(teamVol, 6))
         console.log("[v0] teamVolume (Total Team Business):", totalTeamBusiness)
       } catch (e) {
         console.log("[v0] teamVolume function not available:", e)
