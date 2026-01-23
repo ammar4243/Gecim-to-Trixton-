@@ -40,13 +40,27 @@ export function TokenPurchase() {
 
       const usdtContract = new ethers.Contract(USDT_ADDRESS, usdtAbi, provider)
 
-      const balance = await usdtContract.balanceOf(address)
-      setUsdtBalance(ethers.formatUnits(balance, 6))
+      try {
+        const balance = await usdtContract.balanceOf(address)
+        setUsdtBalance(ethers.formatUnits(balance, 6))
+        console.log("[v0] USDT Balance:", ethers.formatUnits(balance, 6))
+      } catch (balanceError) {
+        console.log("[v0] Could not fetch USDT balance (may be wrong chain or address):", balanceError)
+        setUsdtBalance("0")
+      }
 
-      const allowance = await usdtContract.allowance(address, CONTRACT_ADDRESS)
-      setUsdtAllowance(ethers.formatUnits(allowance, 6))
+      try {
+        const allowance = await usdtContract.allowance(address, CONTRACT_ADDRESS)
+        setUsdtAllowance(ethers.formatUnits(allowance, 6))
+        console.log("[v0] USDT Allowance:", ethers.formatUnits(allowance, 6))
+      } catch (allowanceError) {
+        console.log("[v0] Could not fetch USDT allowance:", allowanceError)
+        setUsdtAllowance("0")
+      }
     } catch (error) {
-      console.error("Error checking USDT balance:", error)
+      console.log("[v0] Error checking USDT balance - using fallback:", error)
+      setUsdtBalance("0")
+      setUsdtAllowance("0")
     }
   }
 
@@ -56,20 +70,26 @@ export function TokenPurchase() {
     try {
       setIsApproving(true)
       setStatus({ type: "idle", message: "" })
+      console.log("[v0] Approval started for USDT amount:", INVESTMENT_AMOUNT)
 
       const usdtAbi = ["function approve(address spender, uint256 amount) returns (bool)"]
       const signer = await provider.getSigner()
       const usdtContract = new ethers.Contract(USDT_ADDRESS, usdtAbi, signer)
 
       const usdtInWei = ethers.parseUnits(INVESTMENT_AMOUNT.toString(), 6)
+      console.log("[v0] Approving USDT amount (wei):", usdtInWei.toString())
+      
       const tx = await usdtContract.approve(CONTRACT_ADDRESS, usdtInWei)
+      console.log("[v0] Approve transaction hash:", tx.hash)
+      
       await tx.wait()
+      console.log("[v0] Approval confirmed")
 
       await checkUsdtBalanceAndAllowance()
-      setStatus({ type: "success", message: "USDT approved successfully!" })
+      setStatus({ type: "success", message: "USDT approved successfully! Now you can invest." })
     } catch (error) {
-      console.error("Approval failed:", error)
-      setStatus({ type: "error", message: "Failed to approve USDT" })
+      console.error("[v0] Approval failed:", error)
+      setStatus({ type: "error", message: error instanceof Error ? error.message : "Failed to approve USDT" })
     } finally {
       setIsApproving(false)
     }
@@ -81,12 +101,15 @@ export function TokenPurchase() {
     try {
       setIsPurchasing(true)
       setStatus({ type: "idle", message: "" })
+      console.log("[v0] Investment started from address:", address)
 
       const referrer = referralAddress && ethers.isAddress(referralAddress)
         ? referralAddress
-        : "0x0000000000000000000000000000000000000000"
+        : ethers.ZeroAddress
 
+      console.log("[v0] Using referrer:", referrer)
       await invest(referrer)
+      console.log("[v0] Investment successful")
 
       setReferralAddress("")
       await refetch()
@@ -94,8 +117,9 @@ export function TokenPurchase() {
 
       setStatus({ type: "success", message: "Investment successful! Your GCM tokens have been credited." })
     } catch (error) {
-      console.error("Purchase failed:", error)
-      setStatus({ type: "error", message: error instanceof Error ? error.message : "Investment failed" })
+      console.error("[v0] Purchase failed:", error)
+      const errorMessage = error instanceof Error ? error.message : "Investment failed. Please try again."
+      setStatus({ type: "error", message: errorMessage })
     } finally {
       setIsPurchasing(false)
     }

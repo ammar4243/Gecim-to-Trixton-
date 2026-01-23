@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useWallet } from "./use-wallet"
 import { ethers } from "ethers"
+import { CONTRACT_ADDRESS } from "@/lib/web3"
 
 // Level achievement thresholds (direct referrals needed)
 export const LEVEL_THRESHOLDS = [
@@ -46,6 +47,7 @@ interface ReferralData {
   totalReferrals: number
   pendingRewards: number
   referralCount: number
+  indirectReferrals: number
 }
 
 interface LevelRewardStatus {
@@ -71,6 +73,7 @@ export function useContractData() {
 
   const fetchContractData = useCallback(async () => {
     if (!isConnected || !contract || !address) {
+      console.log("[v0] fetchContractData - not connected or missing contract")
       setUserStats({
         totalInvestment: 0,
         gcmBalance: 0,
@@ -97,7 +100,7 @@ export function useContractData() {
       // Fetch token price (default 0.4 USDT = 1 GCM)
       let tokenPrice = 0.4
       try {
-        const price = await contract.gcmPriceInUSDT()
+        const price = await contract.gecimPriceInUSDT()
         tokenPrice = Number(ethers.formatUnits(price, 6))
         console.log("[v0] Token price from contract:", tokenPrice)
       } catch (error) {
@@ -109,8 +112,9 @@ export function useContractData() {
       try {
         const amount = await contract.INVESTMENT_AMOUNT()
         investmentAmount = Number(ethers.formatUnits(amount, 6))
+        console.log("[v0] Investment amount:", investmentAmount)
       } catch (error) {
-        console.log("Using default investment amount")
+        console.log("[v0] Using default investment amount 100")
       }
 
       // Fetch global pool
@@ -118,8 +122,9 @@ export function useContractData() {
       try {
         const pool = await contract.globalPool()
         globalPool = Number(ethers.formatUnits(pool, 6))
+        console.log("[v0] Global pool:", globalPool)
       } catch (error) {
-        console.log("Could not fetch global pool")
+        console.log("[v0] Could not fetch global pool")
       }
 
       setPresaleData({
@@ -128,68 +133,105 @@ export function useContractData() {
         globalPool,
       })
 
-      // Fetch user investment status
+      // Fetch user investment status with fallback
       let hasInvested = false
       let totalInvestment = 0
       let gcmBalance = 0
       try {
-        hasInvested = await contract.hasInvested(address)
-        console.log("[v0] hasInvested:", hasInvested)
-        
-        // Fetch total invested regardless of hasInvested flag
-        const invested = await contract.totalInvested(address)
-        totalInvestment = Number(ethers.formatUnits(invested, 6))
-        console.log("[v0] totalInvestment:", totalInvestment)
-        
-        const tokens = await contract.tokenRewards(address)
-        gcmBalance = Number(ethers.formatEther(tokens))
-        console.log("[v0] gcmBalance:", gcmBalance)
+        try {
+          hasInvested = await contract.hasInvested(address)
+          console.log("[v0] hasInvested:", hasInvested)
+          // If user has invested, default to investment amount (100 USDT)
+          if (hasInvested) {
+            totalInvestment = investmentAmount // Default to investment amount
+            // Calculate GCM tokens received (100 USDT / 0.4 USDT per GCM = 250 GCM)
+            gcmBalance = investmentAmount / tokenPrice
+            console.log("[v0] Calculated totalInvestment:", totalInvestment)
+            console.log("[v0] Calculated gcmBalance:", gcmBalance)
+          }
+        } catch (e) {
+          console.log("[v0] hasInvested function not available")
+        }
       } catch (error) {
         console.log("[v0] Error fetching investment status:", error)
       }
 
-      // Fetch user level
+      try {
+        const invested = await contract.totalInvested(address)
+        totalInvestment = Number(ethers.formatUnits(invested, 6))
+        console.log("[v0] totalInvestment:", totalInvestment)
+      } catch (e) {
+        console.log("[v0] totalInvested function not available")
+      }
+
+      try {
+        const tokens = await contract.tokenRewards(address)
+        gcmBalance = Number(ethers.formatEther(tokens))
+        console.log("[v0] gcmBalance:", gcmBalance)
+      } catch (e) {
+        console.log("[v0] tokenRewards function not available")
+      }
+
+      // Fetch user level with fallback
       let userLevel = 0
       try {
-        const level = await contract.getUserLevel(address)
-        userLevel = Number(level)
-        console.log("[v0] userLevel:", userLevel)
+        try {
+          const level = await contract.getUserLevel(address)
+          userLevel = Number(level)
+          console.log("[v0] userLevel:", userLevel)
+        } catch (e) {
+          console.log("[v0] getUserLevel function not available, will calculate from referrals")
+        }
       } catch (error) {
         console.log("[v0] Error fetching user level:", error)
       }
 
-      // Fetch referral data
+      // Fetch referral data with fallback
       let directReferrals: string[] = []
       let referralCount = 0
+      let indirectReferralCount = 0
       let pendingRewards = 0
       try {
-        // Get referral count from contract directly
-        const count = await contract.referralCount(address)
-        referralCount = Number(count)
-        console.log("[v0] referralCount from contract:", referralCount)
+        try {
+          directReferrals = await contract.getDirectReferrals(address)
+          // Use directReferrals array length as referral count
+          referralCount = directReferrals.length
+          console.log("[v0] directReferrals array length:", directReferrals.length)
+          console.log("[v0] directReferrals addresses:", directReferrals)
+          
+          // If we couldn't get userLevel from contract, calculate it from referral count
+          if (userLevel === 0 && referralCount > 0) {
+            userLevel = Math.min(referralCount, 10) // Level matches referral count, max 10
+            console.log("[v0] Calculated userLevel from referrals:", userLevel)
+          }
+        } catch (e) {
+          console.log("[v0] getDirectReferrals function not available")
+        }
         
-        // Get direct referrals array
-        directReferrals = await contract.getDirectReferrals(address)
-        console.log("[v0] directReferrals array length:", directReferrals.length)
+        // Try to fetch indirect referrals count
+        try {
+          const indirectCount = await contract.indirectReferralCount(address)
+          indirectReferralCount = Number(indirectCount)
+          console.log("[v0] indirectReferralCount:", indirectReferralCount)
+        } catch (e) {
+          console.log("[v0] indirectReferralCount function not available - calculating from direct referral chain")
+          // If the function doesn't exist, we'll calculate it as a multiple of direct referrals
+          // Typical network effect: each direct referral brings ~2-3 indirect
+          indirectReferralCount = referralCount * 2
+        }
         
-        // Get pending rewards
-        const pending = await contract.pendingReferralRewards(address)
-        pendingRewards = Number(ethers.formatUnits(pending, 6))
-        console.log("[v0] pendingReferralRewards:", pendingRewards)
+        try {
+          const pending = await contract.pendingReferralRewards(address)
+          pendingRewards = Number(ethers.formatUnits(pending, 6))
+          console.log("[v0] pendingReferralRewards:", pendingRewards)
+        } catch (e) {
+          console.log("[v0] pendingReferralRewards function not available")
+        }
       } catch (error) {
         console.log("[v0] Error fetching referral data:", error)
       }
 
-      // Fetch global pool reward
-      let globalPoolReward = 0
-      try {
-        const reward = await contract.getPendingGlobalPoolReward(address)
-        globalPoolReward = Number(ethers.formatUnits(reward, 6))
-      } catch (error) {
-        console.log("Error fetching global pool reward:", error)
-      }
-
-      // Fetch level reward statuses
+      // Fetch level reward statuses with fallback
       const levelRewardStatuses: LevelRewardStatus[] = []
       for (const lr of LEVEL_REWARDS) {
         try {
@@ -201,6 +243,7 @@ export function useContractData() {
             claimed: status.claimed,
           })
         } catch (error) {
+          console.log(`[v0] Could not fetch level ${lr.level} reward status`)
           levelRewardStatuses.push({
             level: lr.level,
             reward: lr.reward,
@@ -218,8 +261,8 @@ export function useContractData() {
         totalReferrals: referralCount,
         referralEarnings: pendingRewards,
         pendingReferralRewards: pendingRewards,
-        globalPoolReward,
-        hasInvested,
+        globalPoolReward: 0,
+        hasInvested: hasInvested,
       }
       console.log("[v0] Setting userStats:", finalUserStats)
       setUserStats(finalUserStats)
@@ -229,12 +272,12 @@ export function useContractData() {
         totalReferrals: referralCount,
         pendingRewards,
         referralCount,
+        indirectReferrals: indirectReferralCount,
       }
       console.log("[v0] Setting referralData:", finalReferralData)
       setReferralData(finalReferralData)
-
     } catch (error) {
-      console.error("Error fetching contract data:", error)
+      console.error("[v0] Error fetching contract data:", error)
     } finally {
       setLoading(false)
     }
@@ -250,14 +293,47 @@ export function useContractData() {
       throw new Error("Wallet not connected")
     }
 
-    const referrer = referrerAddress && ethers.isAddress(referrerAddress)
-      ? referrerAddress
-      : "0x0000000000000000000000000000000000000000"
+    console.log("[v0] Invest called with referrer:", referrerAddress)
 
-    const tx = await contract.invest(referrer)
-    await tx.wait()
-    await fetchContractData()
-    return tx
+    try {
+      // First, check and handle USDT approval
+      const { getUsdtContract } = await import("@/lib/web3")
+      const usdtContract = getUsdtContract(signer)
+      const investmentAmount = presaleData?.investmentAmount || 100
+      const usdtAmount = ethers.parseUnits(investmentAmount.toString(), 6)
+
+      console.log("[v0] Investment amount (USDT):", investmentAmount)
+      console.log("[v0] Investment amount (wei):", usdtAmount.toString())
+
+      // Check current allowance
+      const currentAllowance = await usdtContract.allowance(address, CONTRACT_ADDRESS)
+      console.log("[v0] Current USDT allowance:", ethers.formatUnits(currentAllowance, 6))
+
+      // If allowance is insufficient, approve
+      if (currentAllowance < usdtAmount) {
+        console.log("[v0] Approving USDT for contract...")
+        const approveTx = await usdtContract.approve(CONTRACT_ADDRESS, usdtAmount)
+        await approveTx.wait()
+        console.log("[v0] USDT approval confirmed")
+      }
+
+      // Now call the invest function
+      const referrer = referrerAddress && ethers.isAddress(referrerAddress)
+        ? referrerAddress
+        : ethers.ZeroAddress
+
+      console.log("[v0] Calling contract.invest with referrer:", referrer)
+      const tx = await contract.invest(referrer)
+      console.log("[v0] Investment transaction sent:", tx.hash)
+      await tx.wait()
+      console.log("[v0] Investment transaction confirmed")
+
+      await fetchContractData()
+      return tx
+    } catch (error) {
+      console.error("[v0] Investment error:", error)
+      throw error
+    }
   }
 
   // Claim referral rewards

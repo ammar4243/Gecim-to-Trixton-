@@ -108,6 +108,7 @@ export function ReferralSystem() {
 
   const pendingRewards = referralData?.pendingRewards || 0
   const totalReferrals = referralData?.referralCount || 0
+  const indirectReferrals = referralData?.indirectReferrals || 0
 
   return (
     <Card className="glass-card border border-primary/30 hover:border-primary/50 transition-all">
@@ -159,8 +160,8 @@ export function ReferralSystem() {
             <div className="flex items-center justify-center gap-1 mb-2">
               <Users size={16} className="text-primary" />
             </div>
-            <p className="text-2xl font-bold text-primary neon-text">{totalReferrals}</p>
-            <p className="text-xs text-muted-foreground">Direct Referrals</p>
+            <p className="text-2xl font-bold text-primary neon-text">{indirectReferrals}</p>
+            <p className="text-xs text-muted-foreground">Indirect Referrals</p>
           </div>
         </div>
 
