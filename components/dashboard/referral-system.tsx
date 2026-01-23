@@ -161,7 +161,7 @@ export function ReferralSystem() {
               <Users size={16} className="text-primary" />
             </div>
             <p className="text-2xl font-bold text-primary neon-text">{indirectReferrals}</p>
-            <p className="text-xs text-muted-foreground">Indirect Referrals</p>
+            <p className="text-xs text-muted-foreground">Total Team Business</p>
           </div>
         </div>
 

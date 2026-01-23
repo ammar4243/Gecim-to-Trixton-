@@ -100,7 +100,7 @@ export function InvestmentOverview() {
               <span className="text-sm font-medium">Total Referrals</span>
             </div>
             <p className="text-2xl font-bold text-accent">{totalReferrals}</p>
-            <p className="text-sm text-muted-foreground">Direct referrals</p>
+
           </div>
 
           <div className="glass-card rounded-xl p-4 border border-green-500/20">

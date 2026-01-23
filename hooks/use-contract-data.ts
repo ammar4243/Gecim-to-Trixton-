@@ -70,6 +70,7 @@ export function useContractData() {
   const [referralData, setReferralData] = useState<ReferralData | null>(null)
   const [levelRewards, setLevelRewards] = useState<LevelRewardStatus[]>([])
   const [loading, setLoading] = useState(false)
+  const [indirectReferralCount, setIndirectReferralCount] = useState<number>(0); // Declare indirectReferralCount
 
   const fetchContractData = useCallback(async () => {
     if (!isConnected || !contract || !address) {
@@ -89,6 +90,7 @@ export function useContractData() {
         totalReferrals: 0,
         pendingRewards: 0,
         referralCount: 0,
+        indirectReferrals: 0,
       })
       setLevelRewards([])
       return
@@ -133,105 +135,80 @@ export function useContractData() {
         globalPool,
       })
 
-      // Fetch user investment status with fallback
+      // Fetch user investment status - NO DUMMY DATA
       let hasInvested = false
       let totalInvestment = 0
       let gcmBalance = 0
       try {
-        try {
-          hasInvested = await contract.hasInvested(address)
-          console.log("[v0] hasInvested:", hasInvested)
-          // If user has invested, default to investment amount (100 USDT)
-          if (hasInvested) {
-            totalInvestment = investmentAmount // Default to investment amount
-            // Calculate GCM tokens received (100 USDT / 0.4 USDT per GCM = 250 GCM)
-            gcmBalance = investmentAmount / tokenPrice
-            console.log("[v0] Calculated totalInvestment:", totalInvestment)
-            console.log("[v0] Calculated gcmBalance:", gcmBalance)
-          }
-        } catch (e) {
-          console.log("[v0] hasInvested function not available")
-        }
-      } catch (error) {
-        console.log("[v0] Error fetching investment status:", error)
+        hasInvested = await contract.hasInvested(address)
+        console.log("[v0] hasInvested:", hasInvested)
+      } catch (e) {
+        console.log("[v0] hasInvested function not available:", e)
       }
-
+      
+      // Try to get totalInvested
       try {
         const invested = await contract.totalInvested(address)
         totalInvestment = Number(ethers.formatUnits(invested, 6))
-        console.log("[v0] totalInvestment:", totalInvestment)
+        console.log("[v0] totalInvested:", totalInvestment)
       } catch (e) {
-        console.log("[v0] totalInvested function not available")
+        console.log("[v0] totalInvested function not available:", e)
       }
 
+      // Try to get tokenRewards (GCM balance)
       try {
         const tokens = await contract.tokenRewards(address)
         gcmBalance = Number(ethers.formatEther(tokens))
         console.log("[v0] gcmBalance:", gcmBalance)
       } catch (e) {
-        console.log("[v0] tokenRewards function not available")
+        console.log("[v0] tokenRewards function not available:", e)
       }
 
-      // Fetch user level with fallback
+      // Fetch user level - using userLevel function
       let userLevel = 0
       try {
-        try {
-          const level = await contract.getUserLevel(address)
-          userLevel = Number(level)
-          console.log("[v0] userLevel:", userLevel)
-        } catch (e) {
-          console.log("[v0] getUserLevel function not available, will calculate from referrals")
-        }
-      } catch (error) {
-        console.log("[v0] Error fetching user level:", error)
+        const level = await contract.userLevel(address)
+        userLevel = Number(level)
+        console.log("[v0] userLevel from contract:", userLevel)
+      } catch (e) {
+        console.log("[v0] userLevel function not available:", e)
+        userLevel = 0
       }
 
-      // Fetch referral data with fallback
+      // Fetch referral data
       let directReferrals: string[] = []
       let referralCount = 0
-      let indirectReferralCount = 0
+      let totalTeamBusiness = 0 // Using referralTree function
       let pendingRewards = 0
+      
       try {
-        try {
-          directReferrals = await contract.getDirectReferrals(address)
-          // Use directReferrals array length as referral count
-          referralCount = directReferrals.length
-          console.log("[v0] directReferrals array length:", directReferrals.length)
-          console.log("[v0] directReferrals addresses:", directReferrals)
-          
-          // If we couldn't get userLevel from contract, calculate it from referral count
-          if (userLevel === 0 && referralCount > 0) {
-            userLevel = Math.min(referralCount, 10) // Level matches referral count, max 10
-            console.log("[v0] Calculated userLevel from referrals:", userLevel)
-          }
-        } catch (e) {
-          console.log("[v0] getDirectReferrals function not available")
-        }
-        
-        // Try to fetch indirect referrals count
-        try {
-          const indirectCount = await contract.indirectReferralCount(address)
-          indirectReferralCount = Number(indirectCount)
-          console.log("[v0] indirectReferralCount:", indirectReferralCount)
-        } catch (e) {
-          console.log("[v0] indirectReferralCount function not available - calculating from direct referral chain")
-          // If the function doesn't exist, we'll calculate it as a multiple of direct referrals
-          // Typical network effect: each direct referral brings ~2-3 indirect
-          indirectReferralCount = referralCount * 2
-        }
-        
-        try {
-          const pending = await contract.pendingReferralRewards(address)
-          pendingRewards = Number(ethers.formatUnits(pending, 6))
-          console.log("[v0] pendingReferralRewards:", pendingRewards)
-        } catch (e) {
-          console.log("[v0] pendingReferralRewards function not available")
-        }
-      } catch (error) {
-        console.log("[v0] Error fetching referral data:", error)
+        directReferrals = await contract.getDirectReferrals(address)
+        referralCount = directReferrals.length
+        console.log("[v0] directReferrals array length:", directReferrals.length)
+        console.log("[v0] directReferrals addresses:", directReferrals)
+      } catch (e) {
+        console.log("[v0] getDirectReferrals function not available:", e)
+      }
+      
+      // Try to fetch Total Team Business using referralTree function
+      try {
+        const teamBusiness = await contract.referralTree(address)
+        totalTeamBusiness = Number(teamBusiness)
+        console.log("[v0] referralTree (Total Team Business):", totalTeamBusiness)
+      } catch (e) {
+        console.log("[v0] referralTree function not available:", e)
+        totalTeamBusiness = 0
+      }
+      
+      try {
+        const pending = await contract.pendingReferralRewards(address)
+        pendingRewards = Number(ethers.formatUnits(pending, 6))
+        console.log("[v0] pendingReferralRewards:", pendingRewards)
+      } catch (e) {
+        console.log("[v0] pendingReferralRewards function not available:", e)
       }
 
-      // Fetch level reward statuses with fallback
+      // Fetch level reward statuses - NO DUMMY CALCULATIONS
       const levelRewardStatuses: LevelRewardStatus[] = []
       for (const lr of LEVEL_REWARDS) {
         try {
@@ -243,13 +220,8 @@ export function useContractData() {
             claimed: status.claimed,
           })
         } catch (error) {
-          console.log(`[v0] Could not fetch level ${lr.level} reward status`)
-          levelRewardStatuses.push({
-            level: lr.level,
-            reward: lr.reward,
-            achieved: userLevel >= lr.level,
-            claimed: false,
-          })
+          console.log(`[v0] Could not fetch level ${lr.level} reward status:`, error)
+          // Do NOT add dummy status - skip if function doesn't exist
         }
       }
       setLevelRewards(levelRewardStatuses)
@@ -272,7 +244,7 @@ export function useContractData() {
         totalReferrals: referralCount,
         pendingRewards,
         referralCount,
-        indirectReferrals: indirectReferralCount,
+        indirectReferrals: totalTeamBusiness, // Using referralTree result
       }
       console.log("[v0] Setting referralData:", finalReferralData)
       setReferralData(finalReferralData)
