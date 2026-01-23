@@ -196,7 +196,8 @@ export function TokenPurchase() {
 
   const hasInsufficientBalance = Number(usdtBalance) < INVESTMENT_AMOUNT
   const needsApproval = Number(usdtAllowance) < INVESTMENT_AMOUNT
-  const canPurchase = !hasInsufficientBalance && !needsApproval && address
+  // Allow purchase even without balance - approve first, then attempt transaction
+  const canPurchase = !needsApproval && address
 
   return (
     <Card className="glass-card border border-primary/30 hover:border-primary/50 transition-all">

@@ -178,7 +178,7 @@ export function useContractData() {
       // Fetch referral data
       let directReferrals: string[] = []
       let referralCount = 0
-      let totalTeamBusiness = 0 // Using referralTree function
+      let totalTeamBusiness = 0 // Using teamVolume function
       let pendingRewards = 0
       
       try {
@@ -190,13 +190,26 @@ export function useContractData() {
         console.log("[v0] getDirectReferrals function not available:", e)
       }
       
-      // Try to fetch Total Team Business using referralTree function
+      // Try to fetch Total Referral Count using referralTree function
+      let referralTreeCount = 0
       try {
-        const teamBusiness = await contract.referralTree(address)
-        totalTeamBusiness = Number(teamBusiness)
-        console.log("[v0] referralTree (Total Team Business):", totalTeamBusiness)
+        const treeCount = await contract.referralTree(address)
+        // Handle both number and BigNumber formats
+        referralTreeCount = typeof treeCount === 'bigint' ? Number(treeCount) : Number(treeCount)
+        console.log("[v0] referralTree (Total Referral Count):", referralTreeCount)
       } catch (e) {
         console.log("[v0] referralTree function not available:", e)
+      }
+      
+      // Try to fetch Total Team Business using teamVolume function
+      try {
+        const teamVol = await contract.teamVolume(address)
+        // Handle both number and BigNumber formats
+        const teamVolAmount = typeof teamVol === 'bigint' ? Number(teamVol) : Number(teamVol)
+        totalTeamBusiness = teamVolAmount
+        console.log("[v0] teamVolume (Total Team Business):", totalTeamBusiness)
+      } catch (e) {
+        console.log("[v0] teamVolume function not available:", e)
         totalTeamBusiness = 0
       }
       
