@@ -142,26 +142,33 @@ export function useContractData() {
       try {
         hasInvested = await contract.hasInvested(address)
         console.log("[v0] hasInvested:", hasInvested)
+        
+        // If user has invested, show investment amount and calculated GCM tokens
+        if (hasInvested) {
+          totalInvestment = investmentAmount // 100 USDT
+          gcmBalance = investmentAmount / tokenPrice // 100 / 0.4 = 250 GCM
+          console.log("[v0] User has invested - Investment:", totalInvestment, "GCM:", gcmBalance)
+        }
       } catch (e) {
         console.log("[v0] hasInvested function not available:", e)
       }
       
-      // Get user's total investment using userInvested function
+      // Get user's total investment using userInvested function (if available)
       try {
         const invested = await contract.userInvested(address)
         totalInvestment = Number(ethers.formatUnits(invested, 6))
         console.log("[v0] userInvested (Total Investment):", totalInvestment)
       } catch (e) {
-        console.log("[v0] userInvested function not available:", e)
+        console.log("[v0] userInvested function not available - using hasInvested flag")
       }
 
-      // Get user's GCM token balance using userBalance function
+      // Get user's GCM token balance using userBalance function (if available)
       try {
         const balance = await contract.userBalance(address)
         gcmBalance = Number(ethers.formatEther(balance))
         console.log("[v0] userBalance (Available GCM Token):", gcmBalance)
       } catch (e) {
-        console.log("[v0] userBalance function not available:", e)
+        console.log("[v0] userBalance function not available - using calculated balance")
       }
 
       // Fetch user level - using userLevel function
@@ -240,11 +247,19 @@ export function useContractData() {
       }
       setLevelRewards(levelRewardStatuses)
 
+      // Calculate Total Referrals based on Total Team Business
+      // Formula: (totalTeamBusiness - 100) / 100
+      let calculatedTotalReferrals = 0
+      if (totalTeamBusiness > 100) {
+        calculatedTotalReferrals = Math.floor((totalTeamBusiness - 100) / 100)
+      }
+      console.log("[v0] Calculated Total Referrals from Team Business:", calculatedTotalReferrals, "(Team Business:", totalTeamBusiness, ")")
+
       const finalUserStats = {
         totalInvestment,
         gcmBalance,
         userLevel,
-        totalReferrals: referralCount,
+        totalReferrals: calculatedTotalReferrals,
         referralEarnings: pendingRewards,
         pendingReferralRewards: pendingRewards,
         globalPoolReward: 0,
@@ -255,7 +270,7 @@ export function useContractData() {
 
       const finalReferralData = {
         directReferrals,
-        totalReferrals: referralCount,
+        totalReferrals: calculatedTotalReferrals,
         pendingRewards,
         referralCount,
         indirectReferrals: totalTeamBusiness, // Using referralTree result
