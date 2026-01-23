@@ -135,7 +135,7 @@ export function useContractData() {
         globalPool,
       })
 
-      // Fetch user investment status - NO DUMMY DATA
+      // Fetch user investment status - using correct function names
       let hasInvested = false
       let totalInvestment = 0
       let gcmBalance = 0
@@ -146,22 +146,22 @@ export function useContractData() {
         console.log("[v0] hasInvested function not available:", e)
       }
       
-      // Try to get totalInvested
+      // Get user's total investment using userInvested function
       try {
-        const invested = await contract.totalInvested(address)
+        const invested = await contract.userInvested(address)
         totalInvestment = Number(ethers.formatUnits(invested, 6))
-        console.log("[v0] totalInvested:", totalInvestment)
+        console.log("[v0] userInvested (Total Investment):", totalInvestment)
       } catch (e) {
-        console.log("[v0] totalInvested function not available:", e)
+        console.log("[v0] userInvested function not available:", e)
       }
 
-      // Try to get tokenRewards (GCM balance)
+      // Get user's GCM token balance using userBalance function
       try {
-        const tokens = await contract.tokenRewards(address)
-        gcmBalance = Number(ethers.formatEther(tokens))
-        console.log("[v0] gcmBalance:", gcmBalance)
+        const balance = await contract.userBalance(address)
+        gcmBalance = Number(ethers.formatEther(balance))
+        console.log("[v0] userBalance (Available GCM Token):", gcmBalance)
       } catch (e) {
-        console.log("[v0] tokenRewards function not available:", e)
+        console.log("[v0] userBalance function not available:", e)
       }
 
       // Fetch user level - using userLevel function
@@ -194,9 +194,11 @@ export function useContractData() {
       let referralTreeCount = 0
       try {
         const treeCount = await contract.referralTree(address)
-        // Handle both number and BigNumber formats
-        referralTreeCount = typeof treeCount === 'bigint' ? Number(treeCount) : Number(treeCount)
-        console.log("[v0] referralTree (Total Referral Count):", referralTreeCount)
+        // referralTree returns a count, format with appropriate decimals
+        if (treeCount) {
+          referralTreeCount = typeof treeCount === 'bigint' ? Number(treeCount) : Number(ethers.formatUnits(treeCount, 0))
+          console.log("[v0] referralTree (Total Referral Count):", referralTreeCount)
+        }
       } catch (e) {
         console.log("[v0] referralTree function not available:", e)
       }
