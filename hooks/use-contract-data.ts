@@ -249,11 +249,12 @@ export function useContractData() {
 
       // Calculate Total Referrals based on Total Team Business
       // Formula: (totalTeamBusiness - 100) / 100
+      // This works for any value from 100 to 10,000,000+
       let calculatedTotalReferrals = 0
-      if (totalTeamBusiness > 100) {
+      if (totalTeamBusiness >= 100) {
         calculatedTotalReferrals = Math.floor((totalTeamBusiness - 100) / 100)
       }
-      console.log("[v0] Calculated Total Referrals from Team Business:", calculatedTotalReferrals, "(Team Business:", totalTeamBusiness, ")")
+      console.log("[v0] Total Referral Calculation: Team Business:", totalTeamBusiness, "→ Referrals:", calculatedTotalReferrals, "Formula: (", totalTeamBusiness, "- 100) / 100")
 
       const finalUserStats = {
         totalInvestment,
@@ -273,7 +274,7 @@ export function useContractData() {
         totalReferrals: calculatedTotalReferrals,
         pendingRewards,
         referralCount,
-        indirectReferrals: totalTeamBusiness, // Using referralTree result
+        indirectReferrals: totalTeamBusiness,
       }
       console.log("[v0] Setting referralData:", finalReferralData)
       setReferralData(finalReferralData)
