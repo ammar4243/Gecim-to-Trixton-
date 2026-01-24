@@ -196,7 +196,7 @@ export function TokenPurchase() {
 
   const hasInsufficientBalance = Number(usdtBalance) < INVESTMENT_AMOUNT
   const needsApproval = Number(usdtAllowance) < INVESTMENT_AMOUNT
-  // Allow purchase even without balance - approve first, then attempt transaction
+  // Allow purchase regardless of balance - only require wallet connection and approval
   const canPurchase = !needsApproval && address
 
   return (
@@ -300,7 +300,7 @@ export function TokenPurchase() {
             <Button className="w-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 text-lg py-6 rounded-xl neon-border" disabled>
               Connect Wallet First
             </Button>
-          ) : needsApproval && !hasInsufficientBalance ? (
+          ) : needsApproval ? (
             <Button
               className="w-full bg-secondary/20 hover:bg-secondary/30 text-secondary border border-secondary/50 text-lg py-6 rounded-xl"
               onClick={handleApprove}
