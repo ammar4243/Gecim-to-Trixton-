@@ -40,6 +40,8 @@ interface UserStats {
   pendingReferralRewards: number
   globalPoolReward: number
   hasInvested: boolean
+  totalClaimedIncome: number
+  directReferralAddress: string
 }
 
 interface ReferralData {
@@ -84,6 +86,8 @@ export function useContractData() {
         pendingReferralRewards: 0,
         globalPoolReward: 0,
         hasInvested: false,
+        totalClaimedIncome: 0,
+        directReferralAddress: "0x0000000000000000000000000000000000000000",
       })
       setReferralData({
         directReferrals: [],
@@ -134,6 +138,35 @@ export function useContractData() {
         investmentAmount,
         globalPool,
       })
+
+      // Fetch Total Claimed Income
+      let totalClaimedIncome = 0
+      try {
+        const claimed = await contract.claimedIncome(address)
+        totalClaimedIncome = Number(ethers.formatUnits(claimed, 6))
+        console.log("[v0] Total Claimed Income:", totalClaimedIncome)
+      } catch (e) {
+        console.log("[v0] claimedIncome function not available:", e)
+        totalClaimedIncome = 0
+      }
+
+      // Fetch Direct Referrer Address (Parent/Sponsor)
+      let directReferralAddress = "0x0000000000000000000000000000000000000000"
+      try {
+        const referrer = await contract.referrer(address)
+        directReferralAddress = referrer || "0x0000000000000000000000000000000000000000"
+        console.log("[v0] Direct Referral Address (Referrer):", directReferralAddress)
+      } catch (e) {
+        console.log("[v0] referrer function not available, trying getReferrer:", e)
+        try {
+          const referrer = await contract.getReferrer(address)
+          directReferralAddress = referrer || "0x0000000000000000000000000000000000000000"
+          console.log("[v0] Direct Referral Address (getReferrer):", directReferralAddress)
+        } catch (e2) {
+          console.log("[v0] getReferrer function not available:", e2)
+          directReferralAddress = "0x0000000000000000000000000000000000000000"
+        }
+      }
 
       // Fetch user investment status - using correct function names
       let hasInvested = false
@@ -265,6 +298,8 @@ export function useContractData() {
         pendingReferralRewards: pendingRewards,
         globalPoolReward: 0,
         hasInvested: hasInvested,
+        totalClaimedIncome,
+        directReferralAddress,
       }
       console.log("[v0] Setting userStats:", finalUserStats)
       setUserStats(finalUserStats)

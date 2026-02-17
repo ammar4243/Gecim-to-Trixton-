@@ -7,6 +7,7 @@ import { InvestmentOverview } from "@/components/dashboard/investment-overview"
 import { ReferralSystem } from "@/components/dashboard/referral-system"
 import { RewardsPanel } from "@/components/dashboard/rewards-panel"
 import { WithdrawalPanel } from "@/components/dashboard/withdrawal-panel"
+import { ClaimsSummary } from "@/components/dashboard/claims-summary"
 import { WalletConnect } from "@/components/wallet-connect"
 import { Card, CardContent } from "@/components/ui/card"
 import { Wallet, Hexagon } from "lucide-react"
@@ -67,6 +68,7 @@ export default function DashboardPage() {
 
             {/* Right Column - Referrals & Rewards */}
             <div className="space-y-6">
+              <ClaimsSummary />
               <WithdrawalPanel />
               <RewardsPanel />
               <ReferralSystem />
