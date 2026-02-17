@@ -58,7 +58,7 @@ export function InvestmentOverview() {
   const totalInvestmentUSD = userStats?.totalInvestment || 0
   const gcmTokens = userStats?.gcmBalance || 0
   const userLevel = userStats?.userLevel || 0
-  const totalReferrals = referralData?.referralCount || 0
+  const totalReferrals = userStats?.totalReferrals || referralData?.totalReferrals || 0
   const pendingReferralRewards = userStats?.pendingReferralRewards || 0
   const globalPoolReward = userStats?.globalPoolReward || 0
   const tokenPrice = presaleData?.tokenPrice || 0.4
