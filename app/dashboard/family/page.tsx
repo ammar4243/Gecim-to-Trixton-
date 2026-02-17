@@ -75,10 +75,13 @@ export default function FamilyPage() {
 
   // Get referral count from contract data
   const directReferralCount = referralData?.referralCount || 0
+  const totalReferralCount = userStats?.totalReferrals || referralData?.totalReferrals || 0
   const directReferralRewards = referralData?.pendingRewards || 0
   
+  console.log("[v0] Family Page - userStats:", userStats)
   console.log("[v0] Family Page - referralData:", referralData)
   console.log("[v0] Family Page - directReferralCount:", directReferralCount)
+  console.log("[v0] Family Page - totalReferralCount:", totalReferralCount)
 
   return (
     <div className="min-h-screen relative">
@@ -133,13 +136,20 @@ export default function FamilyPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Stats Row */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="glass-card rounded-xl p-5 text-center border border-primary/20">
                     <Users className="w-8 h-8 text-primary mx-auto mb-2" />
                     <p className="text-3xl font-bold text-primary neon-text">
                       {loading ? "..." : directReferralCount}
                     </p>
-                    <p className="text-sm text-muted-foreground">Total Count</p>
+                    <p className="text-sm text-muted-foreground">Direct Referrals</p>
+                  </div>
+                  <div className="glass-card rounded-xl p-5 text-center border border-accent/20">
+                    <Users className="w-8 h-8 text-accent mx-auto mb-2" />
+                    <p className="text-3xl font-bold text-accent neon-text-blue">
+                      {loading ? "..." : totalReferralCount}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Total Referrals</p>
                   </div>
                   <div className="glass-card rounded-xl p-5 text-center border border-secondary/20">
                     <DollarSign className="w-8 h-8 text-secondary mx-auto mb-2" />
