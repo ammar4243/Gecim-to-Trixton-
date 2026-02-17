@@ -44,6 +44,7 @@ export function ClaimsSummary() {
   const totalClaimedIncome = userStats?.totalClaimedIncome || 0
   const userLevel = userStats?.userLevel || 0
   const directReferralAddress = userStats?.directReferralAddress || "0x0000000000000000000000000000000000000000"
+  const totalReferrals = userStats?.totalReferrals || 0
 
   return (
     <Card className="glass-card border border-primary/30 hover:border-primary/50 transition-all">
@@ -92,28 +93,39 @@ export function ClaimsSummary() {
           </p>
         </div>
 
-        {/* Direct Referral Wallet Address */}
+        {/* Direct Referral Count and Address */}
         <div className="glass-card rounded-xl p-4 border border-accent/20">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <User size={18} className="text-accent" />
-              <span className="text-sm font-medium">Direct Referrer</span>
+              <span className="text-sm font-medium">Direct Referrals</span>
             </div>
+            <span className="text-xs text-muted-foreground">Count</span>
           </div>
-          <p className="text-lg font-mono text-accent break-all">
-            {formatAddress(directReferralAddress)}
+          <p className="text-2xl font-bold text-accent neon-text-blue">
+            {totalReferrals}
           </p>
-          {directReferralAddress !== "0x0000000000000000000000000000000000000000" ? (
-            <div className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
-              <span className="text-green-500 mt-0.5">✓</span>
-              <span>Your sponsor's wallet address</span>
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
-              <span className="text-yellow-500 mt-0.5">◐</span>
-              <span>No sponsor/referrer linked yet</span>
-            </div>
-          )}
+          <p className="text-xs text-muted-foreground mt-1 mb-3">
+            {totalReferrals === 0 ? "No direct referrals yet" : `${totalReferrals} active referral${totalReferrals !== 1 ? 's' : ''}`}
+          </p>
+          
+          <div className="border-t border-accent/10 pt-3 mt-3">
+            <p className="text-xs text-muted-foreground mb-1">Sponsor Address:</p>
+            <p className="text-sm font-mono text-accent/80 break-all">
+              {formatAddress(directReferralAddress)}
+            </p>
+            {directReferralAddress !== "0x0000000000000000000000000000000000000000" ? (
+              <div className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>Linked to sponsor</span>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
+                <span className="text-yellow-500 mt-0.5">◐</span>
+                <span>No sponsor linked</span>
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

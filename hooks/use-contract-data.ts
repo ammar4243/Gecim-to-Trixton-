@@ -139,33 +139,40 @@ export function useContractData() {
         globalPool,
       })
 
-      // Fetch Total Claimed Income
+      // Fetch Total Claimed Income using totalReferralClaimed
       let totalClaimedIncome = 0
       try {
-        const claimed = await contract.claimedIncome(address)
+        const claimed = await contract.totalReferralClaimed(address)
         totalClaimedIncome = Number(ethers.formatUnits(claimed, 6))
-        console.log("[v0] Total Claimed Income:", totalClaimedIncome)
+        console.log("[v0] Total Claimed Income (totalReferralClaimed):", totalClaimedIncome)
       } catch (e) {
-        console.log("[v0] claimedIncome function not available:", e)
+        console.log("[v0] totalReferralClaimed function not available:", e)
         totalClaimedIncome = 0
       }
 
-      // Fetch Direct Referrer Address (Parent/Sponsor)
+      // Fetch Direct Referrer Address using referralTree
       let directReferralAddress = "0x0000000000000000000000000000000000000000"
+      let directReferralCount = 0
       try {
-        const referrer = await contract.referrer(address)
-        directReferralAddress = referrer || "0x0000000000000000000000000000000000000000"
-        console.log("[v0] Direct Referral Address (Referrer):", directReferralAddress)
-      } catch (e) {
-        console.log("[v0] referrer function not available, trying getReferrer:", e)
-        try {
-          const referrer = await contract.getReferrer(address)
-          directReferralAddress = referrer || "0x0000000000000000000000000000000000000000"
-          console.log("[v0] Direct Referral Address (getReferrer):", directReferralAddress)
-        } catch (e2) {
-          console.log("[v0] getReferrer function not available:", e2)
-          directReferralAddress = "0x0000000000000000000000000000000000000000"
+        const referralTreeData = await contract.referralTree(address)
+        console.log("[v0] referralTree data:", referralTreeData)
+        
+        // referralTree returns [directReferralAddress, directReferralCount]
+        if (Array.isArray(referralTreeData) && referralTreeData.length >= 2) {
+          directReferralAddress = referralTreeData[0] || "0x0000000000000000000000000000000000000000"
+          directReferralCount = Number(referralTreeData[1]) || 0
+        } else if (referralTreeData && typeof referralTreeData === 'object') {
+          // In case it returns an object with properties
+          directReferralAddress = referralTreeData.directReferralAddress || referralTreeData[0] || "0x0000000000000000000000000000000000000000"
+          directReferralCount = Number(referralTreeData.directReferralCount || referralTreeData[1] || 0)
         }
+        
+        console.log("[v0] Direct Referral Address (referralTree):", directReferralAddress)
+        console.log("[v0] Direct Referral Count (referralTree):", directReferralCount)
+      } catch (e) {
+        console.log("[v0] referralTree function not available:", e)
+        directReferralAddress = "0x0000000000000000000000000000000000000000"
+        directReferralCount = 0
       }
 
       // Fetch user investment status - using correct function names
@@ -204,20 +211,20 @@ export function useContractData() {
         console.log("[v0] userBalance function not available - using calculated balance")
       }
 
-      // Fetch user level - using userLevel function
+      // Fetch user level - using getCurrentLevel function
       let userLevel = 0
       try {
-        const level = await contract.userLevel(address)
+        const level = await contract.getCurrentLevel(address)
         userLevel = Number(level)
-        console.log("[v0] userLevel from contract:", userLevel)
+        console.log("[v0] Current Level (getCurrentLevel) from contract:", userLevel)
       } catch (e) {
-        console.log("[v0] userLevel function not available:", e)
+        console.log("[v0] getCurrentLevel function not available:", e)
         userLevel = 0
       }
 
       // Fetch referral data
       let directReferrals: string[] = []
-      let referralCount = 0
+      let referralCount = directReferralCount || 0
       let totalTeamBusiness = 0 // Using teamVolume function
       let pendingRewards = 0
       
@@ -227,7 +234,8 @@ export function useContractData() {
         console.log("[v0] directReferrals array length:", directReferrals.length)
         console.log("[v0] directReferrals addresses:", directReferrals)
       } catch (e) {
-        console.log("[v0] getDirectReferrals function not available:", e)
+        console.log("[v0] getDirectReferrals function not available, using referralTree count:", directReferralCount)
+        referralCount = directReferralCount || 0
       }
       
       // Try to fetch Total Referral Count using referralTree function
