@@ -42,6 +42,7 @@ interface UserStats {
   hasInvested: boolean
   totalClaimedIncome: number
   directReferralAddress: string
+  investmentTimestamp: number
 }
 
 interface ReferralData {
@@ -88,6 +89,7 @@ export function useContractData() {
         hasInvested: false,
         totalClaimedIncome: 0,
         directReferralAddress: "0x0000000000000000000000000000000000000000",
+        investmentTimestamp: 0,
       })
       setReferralData({
         directReferrals: [],
@@ -211,6 +213,17 @@ export function useContractData() {
         console.log("[v0] userBalance function not available - using calculated balance")
       }
 
+      // Fetch investment timestamp using getUserInvestmentTimestamp
+      let investmentTimestamp = 0
+      try {
+        const timestamp = await contract.getUserInvestmentTimestamp(address)
+        investmentTimestamp = Number(timestamp)
+        console.log("[v0] Investment Timestamp (getUserInvestmentTimestamp):", investmentTimestamp)
+      } catch (e) {
+        console.log("[v0] getUserInvestmentTimestamp function not available:", e)
+        investmentTimestamp = 0
+      }
+
       // Fetch user level - using getCurrentLevel function
       let userLevel = 0
       try {
@@ -308,6 +321,7 @@ export function useContractData() {
         hasInvested: hasInvested,
         totalClaimedIncome,
         directReferralAddress,
+        investmentTimestamp,
       }
       console.log("[v0] Setting userStats:", finalUserStats)
       setUserStats(finalUserStats)

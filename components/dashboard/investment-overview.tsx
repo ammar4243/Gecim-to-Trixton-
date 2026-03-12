@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, Coins, Users, Hexagon } from "lucide-react"
 import { useContractData } from "@/hooks/use-contract-data"
 import { useWallet } from "@/hooks/use-wallet"
+import { TokenUnlockBar } from "./token-unlock-bar"
 
 export function InvestmentOverview() {
   const { userStats, presaleData, referralData, loading } = useContractData()
@@ -74,6 +75,12 @@ export function InvestmentOverview() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Token Unlock Bar - After Summary Stats */}
+        <TokenUnlockBar
+          investmentTimestamp={userStats?.investmentTimestamp || 0}
+          isLoading={loading}
+        />
+
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card rounded-xl p-4 border border-primary/20">
