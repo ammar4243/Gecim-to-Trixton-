@@ -92,18 +92,9 @@ export function TokenUnlockBar({ investmentTimestamp, isLoading }: TokenUnlockBa
     )
   }
 
+  // Don't show the bar if user hasn't invested yet
   if (!countdownData) {
-    return (
-      <div className="glass-card rounded-xl p-6 border border-yellow-500/30 bg-yellow-500/5">
-        <div className="flex items-center gap-3">
-          <Lock className="text-yellow-500" size={24} />
-          <div>
-            <p className="font-medium text-yellow-400">No Active Investment</p>
-            <p className="text-sm text-muted-foreground">Invest to start your token unlock timer</p>
-          </div>
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
