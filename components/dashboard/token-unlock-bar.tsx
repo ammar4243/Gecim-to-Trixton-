@@ -22,7 +22,9 @@ export function TokenUnlockBar({ investmentTimestamp, isLoading }: TokenUnlockBa
   } | null>(null)
 
   useEffect(() => {
+    console.log("[v0] TokenUnlockBar received investmentTimestamp:", investmentTimestamp)
     if (!investmentTimestamp || investmentTimestamp === 0) {
+      console.log("[v0] TokenUnlockBar: No investment timestamp, hiding bar")
       setCountdownData(null)
       return
     }
@@ -31,6 +33,7 @@ export function TokenUnlockBar({ investmentTimestamp, isLoading }: TokenUnlockBa
       const investmentDate = new Date(investmentTimestamp * 1000) // Convert Unix timestamp to ms
       const unlockDate = new Date(investmentDate.getTime() + 6 * 30 * 24 * 60 * 60 * 1000) // Add 6 months (approximation: 6 * 30 days)
       const now = new Date()
+      console.log("[v0] TokenUnlockBar calculateCountdown - investmentDate:", investmentDate, "unlockDate:", unlockDate, "now:", now)
 
       const isUnlocked = now >= unlockDate
       let remaining = unlockDate.getTime() - now.getTime()
